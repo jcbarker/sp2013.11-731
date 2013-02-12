@@ -7,13 +7,31 @@ from optparse import OptionParser
 parser = OptionParser(usage="./%prog -n NUM_OF_SENTENCES -i INPUT_FILE")
 parser.add_option("-n", "--number", type=int, help="The number of sentences to align. (default=all)", default=0)
 parser.add_option("-i", "--input", default="data/dev-test-train.de-en", help="The input file containing sentences to align.")
+parser.add_option("-s", "--stem", action="store_true", help="Trivially stem the German.", default=False)
+parser.add_option("-l", "--lower", action="store_true", help="Lower case input.", default=False)
 
 (ops, args) = parser.parse_args()
 
 num = ops.number if ops.number > 0 else None
 sys.stderr.write("Reading data...\n")
 sents = [tuple(line.strip().split("|||")) for line in codecs.open(ops.input, "rb", "utf-8").readlines()[:num]]
-data = [(german.strip().split(), english.strip().split()) for (german, english) in sents]
+sys.stderr.write("Lowercasing German and English...\n")
+if ops.lower:
+    data = [(german.strip().lower().split(), english.strip().lower().split()) for (german, english) in sents]
+else:
+    data = [(german.strip().split(), english.strip().split()) for (german, english) in sents]
+
+def trivialstem(word):
+    return word if len(word) > 3 else word[:-2]
+
+#def stem(word, language):
+    
+
+if ops.stem:
+    sys.stderr.write("Stemming German...\n")
+    for i, (german, english) in enumerate(data):
+        data[i] = ([stem(word) for word in german], english)
+        
 glex = []
 elex = []
 for german, english in data:
@@ -66,8 +84,6 @@ for i in range(5):
     # M step
     sys.stderr.write("Normalizing counts...\n")
     for g_i, (ew, gw) in enumerate(c_e_f.keys()):
-        if g_i in range(0, len(c_e_f.keys()), int(math.ceil(0.1*len(c_e_f.keys())))):
-            sys.stderr.write(str(g_i+1)+"/"+str(len(c_e_f.keys()))+"\n")
         P_f_e[gw][ew] = c_e_f[(ew, gw)]/f[gw]
 
 sys.stderr.write("Writing P(f|e) table to \"ttable\"...\n")
