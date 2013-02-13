@@ -1,17 +1,25 @@
-There are three Python programs here (`-h` for usage):
+Jonathan Barker
+Homework 1
 
- - `./align` aligns words using Dice's coefficient.
- - `./check` checks for out-of-bounds alignment points.
- - `./grade` computes alignment error rate.
-
-The commands are designed to work in a pipeline. For instance, this is a valid invocation:
-
-    ./align -t 0.9 -n 1000 | ./check | ./grade -n 5
+The first thing I tried was implementing IBM Model 1 and running it on the raw text. This worked as well as the baseline on the leaderboard, but obviously there were other things to try.
 
 
-The `data/` directory contains a fragment of the German/English Europarl corpus.
+Lower casing:
+  I ended up lowercasing the inputs, which significantly helped the AER.
 
- - `data/dev-test-train.de-en` is the German/English parallel data to be aligned. The first 150 sentences are for development; the next 150 is a blind set you will be evaluated on; and the remainder of the file is unannotated parallel data.
+Stemming:
+  I implemented a trivial stemmer (it removes the last 2 characters) but it worsened my score. I think stemming should definitely help but only with a proper stemmer.
 
- - `data/dev.align` contains 150 manual alignments corresponding to the first 150 sentences of the parallel corpus. When you run `./check` these are used to compute the alignment error rate. You may use these in any way you choose. The notation `i-j` means the word at position *i* (0-indexed) in the German sentence is aligned to the word at position *j* in the English sentence; the notation `i?j` means they are "probably" aligned.
+Removing numeral<->nonnumeral and punctuation<->nonpunctuation alignments:
+  Removing these links improved AER.
 
+Symmetrizing:
+  I trained my model on German to English and vice versa to attempt some symmetrization techniques.
+  Union:
+    This did not help as the gains in recall did not make up for the loss of precision.
+  Intersection:
+    This helped the most out of all techniques.
+  Grow-Diag:
+    This improved over not symmetrizing but it did not beat out intersection, which I find surprising since it should better balance precision and recall. The accuracy gained from intersection was just too good.
+
+I also tried implementing IBM Model 2, but it demanded too much memory from my laptop. It worked on toy data but I could not get results from it to submit for the leaderboard unfortunately.
