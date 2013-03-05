@@ -1,0 +1,18 @@
+#!/usr/bin/python
+
+import sys
+
+hyp1 = open(sys.argv[1], "rb")
+hyp2 = open(sys.argv[2], "rb")
+ref = open(sys.argv[3], "rb")
+
+def read(file):
+    for line in file:
+    	yield line.strip()
+
+for tup in zip(read(hyp1), read(hyp2), read(ref)):
+    for t in tup:
+        if len(t.strip()) == 0:
+            print tup
+            sys.exit()
+    print " ||| ".join(tup)

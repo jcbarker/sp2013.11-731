@@ -1,0 +1,16 @@
+#!/usr/bin/python
+
+import reader as r
+
+src = open("/home/jon/School/MachineTranslation/sp2013.11-731/hw2/paraphrase/corpus/train.src", "wb")
+tgt = open("/home/jon/School/MachineTranslation/sp2013.11-731/hw2/paraphrase/corpus/train.tgt", "wb")
+src_tgt = open("/home/jon/School/MachineTranslation/sp2013.11-731/hw2/paraphrase/corpus/train.src-tgt", "wb")
+
+for ((a, b, ref), ind) in zip(r.dev_data(), r.gold_refs()):
+    if ind == "-1":
+        src.write(a+"\n")
+        src_tgt.write(a+" ||| "+ref+"\n")
+    else:
+        src.write(b+"\n")
+        src_tgt.write(b+" ||| "+ref+"\n")
+    tgt.write(" ".join(ref)+"\n")

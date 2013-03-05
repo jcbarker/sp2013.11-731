@@ -1,0 +1,36 @@
+#!/usr/bin/python
+
+import sys
+
+pcfg = open(sys.argv[1]+".pcfg", "wb")
+dep = open(sys.argv[1]+".dep", "wb")
+
+raw = open(sys.argv[1], "rb")
+
+parsing = True
+parse = []
+depparse = []
+for line in raw:
+    if parsing:
+        if len(line.strip()) == 0:
+            pcfg.write(" ".join(parse)+"\n")
+            parsing = False
+            parse = []
+        elif line.strip() == "Sentence skipped: no PCFG fallback.":
+            continue
+        elif line.strip() == "SENTENCE_SKIPPED_OR_UNPARSABLE":
+            pcfg.write(line)
+            dep.write(line)
+        elif not line.strip().startswith("("):
+            print line
+        else:
+            parse.append(line.strip())
+    else:
+        if len(line.strip()) == 0:
+            dep.write(" ".join(depparse)+"\n")
+            parsing = True
+            depparse = []
+        else:
+            depparse.append(line.strip().replace(" ", ""))
+pcfg.close()
+dep.close()

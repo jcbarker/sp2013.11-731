@@ -1,0 +1,9 @@
+#!/usr/bin/python
+
+import sys, re
+
+data = open(sys.argv[1], "rb")
+
+num_pat = re.compile("\((.*?)-\d*,(.*?)-\d*\)")
+for line in data:
+    print num_pat.sub("(\\1,\\2)", line.strip())
