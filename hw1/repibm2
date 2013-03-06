@@ -1,0 +1,169 @@
+#!/usr/bin/python
+
+import sys, codecs, math
+from collections import defaultdict
+from optparse import OptionParser
+
+parser = OptionParser(usage="./%prog -n NUM_OF_SENTENCES -i INPUT_FILE")
+parser.add_option("-n", "--number", type=int, help="The number of sentences to align. (default=all)", default=0)
+parser.add_option("-i", "--input", default="data/dev-test-train.de-en", help="The input file containing sentences to align.")
+parser.add_option("-s", "--stem", action="store_true", help="Trivially stem the German.", default=False)
+parser.add_option("-l", "--lower", action="store_true", help="Lower case input.", default=False)
+parser.add_option("-t", "--ttable", default="ttable", help="The IBM model 1 translation table P(f|e).")
+parser.add_option("-b", "--backwards", help="Train from English to German.", action="store_true", default=False)
+parser.add_option("-w", "--write_ttable", help="Write P(f|e) to file.", action="store_true", default=False)
+
+(ops, args) = parser.parse_args()
+
+num = ops.number if ops.number > 0 else None
+sys.stderr.write("Reading data...\n")
+sents = [tuple(line.strip().split("|||")) for line in codecs.open(ops.input, "rb", "utf-8").readlines()[:num]]
+sys.stderr.write("Lowercasing German and English...\n")
+if ops.lower:
+    data = [(german.strip().lower().split(), english.strip().lower().split()) for (german, english) in sents]
+else:
+    data = [(german.strip().split(), english.strip().split()) for (german, english) in sents]
+
+def stem(word):
+    return word if len(word) > 3 else word[:-2]
+if ops.stem:
+    sys.stderr.write("Stemming German...\n")
+    for i, (german, english) in enumerate(data):
+        data[i] = ([stem(word) for word in german], english)
+        
+if ops.backwards:
+    data = [(english, german) for (german, english) in data]
+glex = []
+elex = []
+for german, english in data:
+    glex += german
+    elex += english
+sys.stderr.write("Building German lexicon...\n")
+glex = set(glex)
+sys.stderr.write("Building English lexicon...\n")
+elex = set(elex)
+
+sys.stderr.write("Initializing P(f|e)...\n")
+# Initialize P(f|e)
+P_f_e = defaultdict(lambda: defaultdict(float))
+UNIFORM = True
+if UNIFORM:
+    for i, (german, english) in enumerate(data):
+        for gw in german:
+            for ew in english:
+                P_f_e[gw][ew] = 1.0
+    for i, (gw, ew_counts) in enumerate(P_f_e.items()):
+        Z = sum(ew_counts.values())
+        for ew in ew_counts.keys():
+            P_f_e[gw][ew] = P_f_e[gw][ew]*1.0/Z
+else:
+    cur_word = ""
+    for line in codecs.open(ops.ttable, "rb", "utf-8"):
+        line = line.strip().split("\t")
+        if len(line) == 1:
+            cur_word = line[0]
+        elif len(line) == 2:
+            P_f_e[cur_word][line[0]] = float(line[1])
+        else:
+            sys.stderr.write("Failure at line: "+line+"\n")
+            sys.exit()
+
+# EM
+sys.stderr.write("Done!\nPerforming EM...\n")
+
+p0 = 0.08
+lmbd = 4.0
+
+def h(i, j, le, lf):
+    return -1.0*abs(1.0*i/le-1.0*j/lf)
+
+def Z(i, le, lf):
+    jup = math.floor(1.0*i*lf/le)
+    g1 = math.exp(lmbd*h(i, jup, le, lf))
+    g2 = math.exp(lmbd*h(i, jup+1.0, le, lf))
+    r = math.exp(-1.0*lmbd/lf)
+    return float( g1 * ( 1.0 - math.pow(r, jup)/(1.0-r) ) + g2 * ( 1.0 - math.pow(r, lf-jup+1.0)/(1.0-r) ) )
+
+a = {}
+def a_get(i, j, le, lf):
+    if j == 0:
+        return p0
+    if 0 < j < lf:
+        return (1.0-p0)*math.exp(lmbd*h(i, j, le, lf))/
+    else:
+        return 0.0
+
+for it in range(5):
+    sys.stderr.write("Iteration "+str(it+1)+"...\n")
+
+    # E step
+    c_e_f = defaultdict(float)
+    f = defaultdict(float)
+    c_ijlelf = defaultdict(float)
+    total_jlelf = defaultdict(float)
+    sys.stderr.write("Counting...\n")
+    for i, (german, english) in enumerate(data):
+        #if i in range(0, len(data), int(math.ceil(0.1*len(data))))+[len(data)-1]:
+        #    sys.stderr.write(str(i+1)+"/"+str(len(data))+"\n")
+        e = defaultdict(float)
+        le = len(english)
+        lf = len(german)
+        for j, ew in enumerate(english):
+            for i, gw in enumerate(german):
+                e[ew] += P_f_e[gw][ew]*a_get(i, j, le, lf)
+        for j, ew in enumerate(english):
+            for i, gw in enumerate(german):
+                c = P_f_e[gw][ew]*a_get(i, j, le, lf)/e[ew]
+                c_ijlelf[(i, j, le, lf)] += c
+                total_jlelf[(j, le, lf)] += c
+                c_e_f[(ew, gw)] += c
+                f[gw] += c
+    # M step
+    sys.stderr.write("Normalizing counts...\n")
+    dLmbd = 
+    
+    for (ew, gw) in c_e_f.keys():
+        P_f_e[gw][ew] = c_e_f[(ew, gw)]/f[gw]
+    for (i, j, le, lf), count in c_ijlelf.items():
+        a[(i, j, le, lf)] = count/total_jlelf[(j, le, lf)]
+if ops.write_ttable:
+    sys.stderr.write("Writing P(f|e) table to \"ttable\"...\n")
+    ttable = codecs.open("ttable.ibm2", "wb", "utf-8")
+    for gw, edict in P_f_e.items():
+        ttable.write(gw+"\n")
+        for ew, p in edict.items():
+            ttable.write("\t"+ew+"\t"+str(p)+"\n")
+    ttable.close()
+
+# Align
+def diag_dist(s_i, s_len, t_i, t_len):
+    return -1.0*abs(float(1.0*(s_i+1)/s_len-1.0*(t_i+1)/t_len))
+
+def align(gw, gw_i, english):
+    dist = sorted([(P_f_e[gw][ew]*a[(gw_i, ew_i, len(english), len(german))], ew, ew_i) for ew_i, ew in enumerate(english)], reverse=True)
+    word = max(dist)[1]
+    matches = filter(lambda (s, w, i): w == word, dist)
+    if len(matches) > 1:
+        return max([(diag_dist(gw_i, len(german), ew_i, len(english)), ew, ew_i) for (s, ew, ew_i) in matches])[1:]
+    else:
+        return matches[0][1:]
+
+def number(txt):
+    for c in txt:
+        if c in {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+            return True
+    return False
+
+def punct(txt):
+    return txt in {",", ".", "'", "\""}
+
+def suitable(gw, ew):
+    return number(gw) == number(ew) and ((punct(gw) and punct(ew) and gw == ew) or (punct(gw) == punct(ew)))
+
+sys.stderr.write("Calculating and printing out alignments...\n")
+for german, english in data:
+    for i, gw in enumerate(german):
+        (ew, ew_i) = align(gw, i, english)
+        if suitable(gw, ew):
+            print str(i)+"-"+str(ew_i),
+    print ""

@@ -1,0 +1,10 @@
+Jonathan Barker
+Homework 1
+
+The first thing I tried was implementing IBM Model 1 and running it on the raw text. This worked as well as the baseline on the leaderboard, but obviously there were other things to try.
+
+Lower casing:
+  I ended up lowercasing the inputs, which significantly helped the AER.
+
+Removing numeral<->nonnumeral and punctuation<->nonpunctuation alignments:
+  Removing these links improved AER.

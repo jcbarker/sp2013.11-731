@@ -1,0 +1,35 @@
+Targeted paraphrasing
+
+Features:
+Comparison of parse tree shapes (using depth of trees)
+BLEU
+Better METEOR
+NIST
+TER
+ROUGE
+CCG Reordering
+Pseudo references from paraphrasing and pivot mt systems
+Semafor (maybe)
+Comparing dependency parses
+Comparing tense/aspect of verbs
+Comparing named entities
+
+Tasks:
+Parsing (PCFG and Dependency)
+Stemming
+Aligning
+NER
+WordNet/Verbnet
+LM
+
+Models:
+Neural network
+SVM
+Naive Bayes
+Logistic Regression
+Decision Trees
+
+Future work:
+Clustering to define types of sentences
+Determine difficulty of translation by depth of decision tree
+

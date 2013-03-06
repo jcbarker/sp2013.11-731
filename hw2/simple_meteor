@@ -1,0 +1,89 @@
+#!/usr/bin/python
+
+import sys
+from optparse import OptionParser
+from collections import defaultdict
+import numpy as np
+
+parser = OptionParser()
+parser.add_option("-i", "--input", help="The input file containing tuples.")
+parser.add_option("-d", "--dev", help="The input file containing dev tuples.")
+parser.add_option("-g", "--gold", help="The input file containing dev gold.")
+(ops, args) = parser.parse_args()
+
+def meteor(o, r, l):
+    recall = 0.0
+    for word in r:
+        if word in o:
+            recall += 1.0
+    recall /= len(r)
+
+    precision = 0.0
+    for word in o:
+        if word in r:
+            precision += 1.0
+    precision /= len(o)
+
+    if precision+recall == 0:
+        return 0
+    return 2.0*precision*recall/(l*precision+(1-l)*recall)
+
+def test(hyp):
+    correct = 0.0
+    for (h, g) in zip(hyp, gold_ref):
+        if h == g:
+            correct += 1.0
+    return correct/len(gold_ref)
+
+dev = open(ops.dev, "rb")
+gold = open(ops.gold, "rb")
+gold_ref = [int(line.strip()) for line in gold]
+
+sys.stderr.write("Training...\n")
+ans_list = defaultdict(list)
+lmbd = np.arange(0.0, 1.0, .1)
+for raw in dev:
+    line = raw.strip().split("|||")
+    a_sent = line[0].strip().split()
+    b_sent = line[1].strip().split()
+    ref = line[2].strip().split()
+    if len(a_sent) == 0 or len(b_sent) == 0 or len(ref) == 0:
+        print raw
+    for l in lmbd:
+        if a_sent == b_sent or meteor(a_sent, ref, l) == meteor(b_sent, ref, l):
+            ans_list[l].append(0)
+        else:
+            ans_list[l].append(max([(meteor(a_sent, ref, l), -1), (meteor(b_sent, ref, l), 1)])[1])
+
+score = 0
+scores = []
+best_lambda = 0
+best_ans = ans_list[0.0]
+for l, ans in ans_list.items():
+    new_score = test(ans)
+    scores.append((l, new_score))
+    if new_score > score:
+        best_lambda = l
+        score = new_score
+        best_ans = ans
+'''
+for a in ans:
+    print a
+sys.exit()
+'''
+
+for s, l in sorted(scores, reverse=True):
+    sys.stderr.write(str(s)+" : "+str(l)+"\n")
+
+sys.stderr.write("Best lambda: "+str(best_lambda)+"\nScore: "+str(score)+"\nReading data...\n")
+f = open(ops.input, "rb") if ops.input else sys.stdin
+best_lambda = 0.5
+for raw in f:
+    line = raw.strip().split("|||")
+    a_sent = line[0].strip().split()
+    b_sent = line[1].strip().split()
+    ref = line[2].strip().split()
+    if a_sent == b_sent:
+        print "0"
+    else:
+        print str(max([(meteor(a_sent, ref, best_lambda), -1), (meteor(b_sent, ref, best_lambda), 1)])[1])

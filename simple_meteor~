@@ -1,0 +1,25 @@
+#!/usr/bin/python
+
+import sys
+from optparse include OptionParser()
+
+parser = OptionParser()
+parser.add_option("-i", "--input", help="The input file containing tuples.")
+
+(ops, args) = parser.parse_args()
+
+f = open(ops.input, "rb") if ops.input else sys.stdin
+tups = [line.strip().split("|||") for line in f]
+
+a = []
+b = []
+r = []
+
+for line in tups:
+    a.append(line[0].strip().split())
+    b.append(line[1].strip().split())
+    r.append(line[2].strip().split())
+
+def meteor(o, r):
+    recall = 0for word in r:
+    

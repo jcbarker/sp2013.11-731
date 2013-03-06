@@ -1,0 +1,54 @@
+#!/usr/bin/python
+
+import sys, codecs
+
+def parse(filename):
+    raw = [line.strip().split() for line in open(filename,  "rb").readlines()]
+    final = []
+    for line in raw:
+        new = []
+        for align in line:
+            new.append(tuple(map(lambda x: int(x), align.split("-"))))
+        final.append(new)
+    return final
+
+def getlen(filename):
+    sents = [tuple(line.strip().split("|||")) for line in codecs.open(filename, "rb", "utf-8").readlines()]
+    return [(len(german.strip().split()), len(english.strip().split())) for (german, english) in sents]
+
+def notAligned(word, aligns, source=True):
+    if source:
+        return word in [src for (src, tgt) in aligns]
+    else:
+        return word in [tgt for (src, tgt) in aligns]
+
+nbrs = {(-1,0),(0,-1),(1,0),(0,1),(-1,-1),(-1,1),(1,-1),(1,1)}
+def getNeighbors(g_i, e_i, gl, el):
+    n = map(lambda (gi, ei): (gi+g_i, ei+e_i), nbrs)
+    return filter(lambda (gi, ei): True if 0 <= gi < gl and 0 <= ei < el else False, n)
+
+data1 = parse(sys.argv[1])
+data2 = parse(sys.argv[2])
+lens = getlen(sys.argv[3])
+
+data = zip(data1, data2)
+sym = []
+for i, (d1, d2) in enumerate(data):
+    s = list(set(d1).intersection(d2))
+    un = list(set(d1).union(d2))
+
+    # Grow diag
+    old_l = 0
+    while old_l != len(s):
+        old_l = len(s)
+        for ew in range(lens[i][1]):
+            for gw in range(lens[i][0]):
+                for (new_g, new_e) in getNeighbors(gw, ew, lens[i][0], lens[i][1]):
+                    if (notAligned(new_g, d1) or notAligned(new_e, d2, False)) and (new_g, new_e) in un:
+                        s.append((new_g, new_e))
+    sym.append(s)
+
+for d in sym:
+    for (src, tgt) in d:
+        print str(src)+"-"+str(tgt),
+    print ""

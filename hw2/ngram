@@ -1,0 +1,12 @@
+#!/usr/bin/python
+
+import sys
+
+for line in open("test.feat", "rb"):
+    combined = sum(map(lambda x: float(x), line.strip().split("\t")))
+    if combined == 0:
+        print 0
+    elif combined > 0:
+        print -1
+    else:
+        print 1

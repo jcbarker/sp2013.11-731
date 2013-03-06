@@ -1,0 +1,4 @@
+Jonathan Barker
+Homework 2
+
+The first thing I implemented was a variant of the simple meteor baseline. The change I made was assuming that each word in the hypothesis could only match one word in the reference. This way we avoid overcounting common words like "the" and skewing the score towards hypotheses with common words.

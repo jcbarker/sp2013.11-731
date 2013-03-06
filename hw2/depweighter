@@ -1,0 +1,7 @@
+#!/usr/bin/python
+
+import sys
+
+num_pat = re.compile("\((.*?),(.*?)\)")
+for line in open(sys.argv[1], "rb"):
+    

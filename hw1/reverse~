@@ -1,0 +1,8 @@
+#!/usr/bin/python
+
+import sys
+
+def reverse(txt):
+    return "".join(list(txt)[::-1])
+
+data = [line.strip().split() for line in sys.stdin.readlines()]

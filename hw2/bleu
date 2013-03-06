@@ -1,0 +1,46 @@
+#!/usr/bin/python
+
+# BLEU Implementation
+
+import reader
+from collections import Counter, defaultdict
+
+N=range(1,5)
+SEP="|||"
+
+def ngram(sent, n):
+    s = []
+    for i in range(0, len(sent), n):
+        s.append(SEP.join(sent[i:i+n]))
+    return s
+
+def bleu(hyp, ref, n):
+    hyp = ngram(hyp, n)
+    ref = ngram(ref, n)
+
+    h = Counter(hyp)
+    r = Counter(ref)
+
+    return 1.0*sum([min(h[gram], r[gram]) for gram in dict(r).keys()])/sum(r.values())
+
+for n in N:
+    print "Running "+str(n)+"gram..."
+    o = open("output.dev."+str(n)+"gram", "wb")
+    for i, (a, b, r) in enumerate(reader.dev_data()):
+        b_bleu = bleu(b, r, n)
+        a_bleu = bleu(a, r, n)
+        if a_bleu == b_bleu:
+            o.write("0\n")
+        else:
+            o.write(str(max([(a_bleu, -1), (b_bleu, 1)])[1])+"\n")
+    o.close()
+
+    o = open("output."+str(n)+".gram", "wb")
+    for (a, b, r) in reader.input_data():
+        b_bleu = bleu(b, r, n)
+        a_bleu = bleu(a, r, n)
+        if a_bleu == b_bleu:
+            o.write("0\n")
+        else:
+            o.write(str(max([(a_bleu, -1), (b_bleu, 1)])[1])+"\n")
+    o.close()

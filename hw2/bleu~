@@ -1,0 +1,14 @@
+#!/usr/bin/python
+
+# BLEU Implementation
+
+import reader
+
+def bleu(hyp, ref):
+    
+
+for (a, b, r) in reader.dev_data():
+    if a == b:
+        print 0
+    else:
+        print max([(bleu(a, r), -1), (bleu(b, r), 1)])[1]
