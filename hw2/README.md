@@ -1,19 +1,10 @@
-There are three Python programs here (`-h` for usage):
+Jonathan Barker
+Homework 2
 
- - `./evaluate` evaluates pairs of MT output hypotheses relative to a reference translation using counts of matched words
- - `./check` checks that the output file is correctly formatted
- - `./grade` computes the accuracy
+The first thing I implemented was a variant of the simple METEOR baseline. The change I made was assuming that each word in the hypothesis could only match one word in the reference. This way we avoid overcounting common words like "the" and skewing the score towards hypotheses with common words.
 
-The commands are designed to work in a pipeline. For instance, this is a valid invocation:
+Tuning the balance between recall and precision helped. I enjoyed a decent gain from tokenizing the data, which one would expect. I also tried lowercasing the data but this hurt performance. This was not the only counterintuitive fact however.
 
-    ./evaluate | ./check | ./grade
+I also tried implementing BLEU. My unigram BLEU beat the simple METEOR in training but not in testing. I thought this was odd but continued on. I also tried bigram , trigram, and 4gram BLEU. I combined all of the scores together to make a unified BLEU system. This combined system outperformed any single ngram BLEU and of course beat my simple METEOR. However, it still loses to simple METEOR in testing.
 
-
-The `data/` directory contains a training set and a test set
-
- - `data/train.hyp1-hyp2-ref` is a file containing tuples of two translation hypotheses and a human (gold standard) translation.
-
- - `data/train.gold` contains gold standard human judgements indicating whether the first hypothesis (hyp1) or the second hypothesis (hyp2) is better or equally good/bad.
-
- - `data/test.hyp1-hyp2-ref` is a blind test set containing tuples of two translation hypotheses and a human (gold standard) translation. You will be graded on how well your predictions correlate with human judgements.
-
+Another approach I took was trying to incorporate linguistic knowledge. I dependency parsed the data using the Stanford Dependency Parser and tried using my simple METEOR metric on the resulting dependencies. This performed terribly.
