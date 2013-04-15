@@ -1,18 +1,15 @@
-There are three Python programs here (`-h` for usage):
+Jonathan Barker
+Hw 3
 
- - `./decode` a simple non-reordering (monotone) phrase-based decoder
- - `./grade` computes the model score of your output
+Approaches:
 
-The commands are designed to work in a pipeline. For instance, this is a valid invocation:
+Swapping:
+	For this approach I took the best output of the default decoder then tried swapping adjacent words and phrases. If swapping a word or
+	phrase improved the LM score then I keep the swap. This naive approach did provide some gains, but not a lot on it's own. The code is
+	in "swapdecode".
 
-    ./decode | ./grade
-
-
-The `data/` directory contains the input set to be decoded and the models
-
- - `data/input` is the input text
-
- - `data/lm` is the ARPA-format 3-gram language model
-
- - `data/tm` is the phrase translation model
-
+Full decoder:
+	Here I altered the decoder to allow for reordering of phrases by skipping phrases then translating them later as described in
+	the lecture slides. I calculate a future cost for all spans before decoding the integrate this with the TM and LM scores as
+	well as a distortion score. My distortion function is a specified alpha raised to the absolute value of the reordering
+	distance, as described in lecture and the book.
