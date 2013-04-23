@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import optparse
+import sys
+import random
+import subprocess
+
+optparser = optparse.OptionParser()
+optparser.add_option("-k", "--kbest-list", dest="input", default="data/test.100best", help="100-best translation lists")
+optparser.add_option("-n", "--num-samples", dest="n", default=100, type=int, help="Number of points to sample for each hypothesis.")
+optparser.add_option("-o", "--output", dest="output", default="pro_feats.csv", help="Output file for features.")
+(opts, _) = optparser.parse_args()
+
+def feat_vector(feats):
+  v = []
+  for feat in feats.split(' '):
+    (_, val) = feat.split('=')
+    v.append(float(val))
+  return v
+
+meteor_cmd = "java -Xmx1G -jar meteor-1.4/meteor-1.4.jar"
+def meteor(hyp, ref):
+  
+  return score
+
+def sample(hyps):
+  (hyp1, hyp2) = random.sample(hyps, 2)
+  feats1, feats2 = feat_vector(hyp1[2]), feat_vector(hyp2[2])
+
+  feats12 = map(lambda (x, y): x-y, zip(feats1, feats2))
+  feats21 = map(lambda x: str(-1.0*x), feats12)
+  feats12 = map(lambda x: str(x), feats12)
+
+  label12 = ["+", "-"][score(hyp1[2]) > score(hyp2[2])]
+  feats12.append(label12)
+  label21 = ["+", "-"][label12 == "+"]
+  feats21.append(label21)
+  return (feats12, feats21)
+
+all_hyps = [pair.split(' ||| ') for pair in open(opts.input)]
+num_sents = len(all_hyps) / 100
+#feat_file = open(opts.output, "wb")
+for s in xrange(0, num_sents):
+  hyps_for_one_sent = all_hyps[s * 100:s * 100 + 100]
+  (best_score, best) = (-1e300, '')
+  for i in xrange(opts.n):
+    pts = sample(hyps_for_one_sent)
+  try:
+    for pt in pts:
+      sys.stdout.write(",".join(pt)+"\n")
+  except (Exception):
+    sys.exit(1)
+
