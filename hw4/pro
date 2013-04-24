@@ -5,9 +5,10 @@ import random
 import subprocess
 
 optparser = optparse.OptionParser()
-optparser.add_option("-k", "--kbest-list", dest="input", default="data/test.100best", help="100-best translation lists")
+optparser.add_option("-k", "--kbest-list", dest="input", default="data/dev.100best", help="100-best translation lists")
 optparser.add_option("-n", "--num-samples", dest="n", default=100, type=int, help="Number of points to sample for each hypothesis.")
 optparser.add_option("-o", "--output", dest="output", default="pro_feats.csv", help="Output file for features.")
+optparser.add_option("-r", "--ref-file", dest="ref", default="data/dev.ref", help="Reference file for tuning.")
 (opts, _) = optparser.parse_args()
 
 def feat_vector(feats):
@@ -17,9 +18,20 @@ def feat_vector(feats):
     v.append(float(val))
   return v
 
-meteor_cmd = "java -Xmx1G -jar meteor-1.4/meteor-1.4.jar"
+def write_to_file(s, fname):
+  f = open(fname, "wb")
+  f.write(s)
+  f.close()
+
+refs = [line.strip() for line in open(opts.ref, "rb").readlines()]
+meteor_cmd = "java -Xmx1G -jar meteor-1.4/meteor-1.4.jar tmp.ref tmp.hyp -l en -norm"
 def meteor(hyp, ref):
-  
+  write_to_file(ref, "tmp.ref")
+  write_to_file(hyp, "tmp.hyp")
+  process = subprocess.Popen(meteor_cmd.split(), shell=False, stdout=subprocess.PIPE)
+  score = float(process.stdout.readlines()[-1].strip().split()[-1])
+  subprocess.call("rm tmp.hyp".split(), shell=False)
+  subprocess.call("rm tmp.ref".split(), shell=False)
   return score
 
 def sample(hyps):
@@ -30,7 +42,8 @@ def sample(hyps):
   feats21 = map(lambda x: str(-1.0*x), feats12)
   feats12 = map(lambda x: str(x), feats12)
 
-  label12 = ["+", "-"][score(hyp1[2]) > score(hyp2[2])]
+  ref = refs[int(hyp1[0][3:])-1]
+  label12 = ["+", "-"][meteor(hyp1[1], ref) > meteor(hyp2[1], ref)]
   feats12.append(label12)
   label21 = ["+", "-"][label12 == "+"]
   feats21.append(label21)
@@ -41,7 +54,6 @@ num_sents = len(all_hyps) / 100
 #feat_file = open(opts.output, "wb")
 for s in xrange(0, num_sents):
   hyps_for_one_sent = all_hyps[s * 100:s * 100 + 100]
-  (best_score, best) = (-1e300, '')
   for i in xrange(opts.n):
     pts = sample(hyps_for_one_sent)
   try:
